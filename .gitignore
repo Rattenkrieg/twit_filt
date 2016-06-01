@@ -1,0 +1,9 @@
+/_build
+/cover
+/deps
+erl_crash.dump
+*.ez
+/.vagrant
+common.cab
+install.log
+Vagrantfile
