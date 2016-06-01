@@ -4,7 +4,7 @@ defmodule TwitFilt.TwitterSupervisor do
 
   def start_link do
     Logger.debug "linking application supervisor"
-    Supervisor.start_link(__MODULE__, nil, name: :twit_filt_twitter_supervisor)
+    Supervisor.start_link(__MODULE__, nil, name: __MODULE__)
   end
 
   def init(_) do
