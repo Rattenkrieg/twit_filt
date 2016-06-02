@@ -7,8 +7,8 @@ defmodule TwitFilt.DuplicatesFilter do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
 
-  def sieve_urls(urls) do
-    GenServer.call(__MODULE__, {:sieve, urls})
+  def sieve_urls(tweets) do
+    GenServer.call(__MODULE__, {:sieve, tweets})
   end
   
   def init(_) do
@@ -16,9 +16,18 @@ defmodule TwitFilt.DuplicatesFilter do
     {:ok, {MapSet.new}}
   end
   
-  def handle_call({:sieve, urls}, _, {seen_urls}) do
-    urls = MapSet.new urls
-    new_urls = MapSet.difference urls, seen_urls
-    {:reply, new_urls, {MapSet.union(urls, seen_urls)}}
+  def handle_call({:sieve, tweets}, _, {seen_urls}) do
+    {filtered_tweets, seen_urls} =
+      tweets
+      |> Enum.reverse
+      |> Enum.reduce({[], seen_urls},
+                     fn(tweet, {filtered_tweets, seen_urls}) ->
+                        urls = tweet.entities.urls
+                        if Enum.all?(urls, &MapSet.member?(seen_urls, &1))
+                     	  do {filtered_tweets, seen_urls}
+			  else {[tweet | filtered_tweets], Enum.into(urls, seen_urls)}
+                        end
+                     end)
+    {:reply, filtered_tweets, {seen_urls}}
   end
 end
