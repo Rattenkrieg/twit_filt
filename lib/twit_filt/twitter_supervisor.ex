@@ -9,9 +9,10 @@ defmodule TwitFilt.TwitterSupervisor do
 
   def init(_) do
     Logger.debug "initing application supervisor"
-    supervise([worker(TwitFilt.TwitterPoller, []),
-	       worker(TwitFilt.DuplicatesFilter, []),
-	       worker(TwitFilt.Persister, ["./twit_filt/"]),
+    supervise([worker(TwitFilt.Persister, ["./twit_filt"]),
+	       worker(TwitFilt.TwitterPoller, [{TwitFilt.Persister, :get_last_id, []}]),
+	       worker(TwitFilt.DuplicatesFilter, [fn -> TwitFilt.Persister.get_stored_urls |> Enum.into(MapSet.new) end]),
+	       worker(TwitFilt.Pipeline, []),
 	      ],
       strategy: :one_for_one)
   end
