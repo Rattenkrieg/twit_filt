@@ -37,7 +37,8 @@ defmodule TwitFilt.Persister do
   end
 
   def handle_cast({:append, urls}, {data_dir}) do
-    File.write!("#{data_dir}/#{@urls_file}", Enum.map(urls, &(~s(#{&1}\r\n))), [:append])
+    File.write!("#{data_dir}/#{@urls_file}", urls |>
+      Enum.map(fn {url, cnt} -> ~s(#{url} #{cnt}\r\n) end), [:append])
     {:noreply, {data_dir}}
   end
 
@@ -52,7 +53,13 @@ defmodule TwitFilt.Persister do
   end
 
   def handle_call({:contents_urls}, _, {data_dir}) do
-    urls = "#{data_dir}/#{@urls_file}" |> read_file |> extract_contents
+    urls = "#{data_dir}/#{@urls_file}"
+    |> read_file
+    |> extract_contents
+    |> Enum.into(%{}, fn s ->
+      [url, cnt] = String.split(s, " ")
+      {url, String.to_integer(cnt)}
+    end)
     {:reply, urls, {data_dir}}
   end
 
@@ -64,12 +71,12 @@ defmodule TwitFilt.Persister do
 
   def read_file(file) do
     with {:ok, file} <- File.open(file, [:read]),
-      contents <- file
-      |> IO.stream(:line)
-      |> Stream.map(&String.rstrip/1)
-      |> Enum.to_list,
-      :ok <- File.close(file),
-      do: {:ok, contents}
+         contents <- file
+	   |> IO.stream(:line)
+	   |> Stream.map(&String.rstrip/1)
+	   |> Enum.to_list,
+         :ok <- File.close(file),
+	 do: {:ok, contents}
   end
 
   def extract_contents({:ok, contents}), do: contents

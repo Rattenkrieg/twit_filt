@@ -24,6 +24,6 @@ defmodule TwitFilt.TwitterPoller do
 			[latest_tweet | _] -> latest_tweet.id
 			[] -> latest_tweet_id
 		      end
-    {:reply, {latest_tweet_id, home_timeline}, {latest_tweet_id}}
+    {:reply, home_timeline, {latest_tweet_id}}
   end
 end

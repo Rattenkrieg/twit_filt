@@ -21,6 +21,30 @@ defmodule TwitFilt.DuplicatesFilter do
   end
 
   def handle_call({:sieve, tweets}, _, {seen_urls}) do
+    seen_urls = tweets
+    |> Enum.reduce(seen_urls, fn tweet, acc ->
+      tweet.entities.urls
+      |> Enum.reduce(acc, fn url, acc ->
+	Map.update(acc, url.expanded_url |> valuable_part, 1, &(&1 + 1))
+      end)
+    end)
+    {filtered_tweets, seen_urls} = tweets
+    |> Enum.sort(&(Enum.count(&1.entities.urls) <= Enum.count(&2.entities.urls)))
+    |> Enum.reduce({[], seen_urls}, fn tweet, {filtered, seen} ->
+      tweet.entities.urls
+      |> Enum.reduce_while({filtered, seen},
+      fn url, {filtered, advanced} ->
+	url = url.expanded_url |> valuable_part
+	case advanced do
+	  %{^url => n} when n > 1 -> {:cont, {filtered, Map.update!(advanced, url, &(&1 - 1))}}
+	  _ -> {:halt, {[tweet | filtered], seen}}
+	end
+      end)
+    end)
+    {:reply, filtered_tweets |> Enum.sort(&(&1.id > &2.id)) , {seen_urls}}
+  end
+
+  def handle_call({:sieve_old, tweets}, _, {seen_urls}) do
     {filtered_tweets, seen_urls} =
       tweets
       |> Enum.reverse

@@ -23,10 +23,9 @@ defmodule TwitFilt.Pipeline do
 
     unless Enum.empty?(latest_tweets), do: update_id latest_tweet_id
     unless Enum.empty?(sieved_tweets) do
-      update_rss sieved_tweets
+      backup_tweets sieved_tweets
 
-      sieved_urls = for
-        tweet <- sieved_tweets,
+      sieved_urls = for tweet <- sieved_tweets,
 	url_struct <- tweet.entities.urls,
 	url <- url_struct.expanded_url |> DuplicatesFilter.valuable_part,
 	into: MapSet.new,
@@ -42,6 +41,8 @@ defmodule TwitFilt.Pipeline do
   def sieve(tweets), do: TwitterPoller.sieve_urls(tweets)
 
   def update_id(id), do: Persister.update_id(id)
+
+  def backup_tweets(tweets), do: nil
 
   def append_urls(urls), do: Persister.append_urls(urls)
 
