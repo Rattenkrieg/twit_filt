@@ -1,7 +1,9 @@
 defmodule TwitFilt.Pipeline do
   use GenServer
   require Logger
-  alias TwitFilt
+  alias TwitFilt.TwitterPoller, as: Poller
+  alias TwitFilt.DuplicatesFilter, as: Filter
+  alias TwitFilt.Persister
 
   def start_link do
     Logger.debug "linking pipeline"
@@ -11,38 +13,39 @@ defmodule TwitFilt.Pipeline do
   def work_once do
     GenServer.cast(__MODULE__, {:work_once})
   end
-  
+
   def init(_) do
     Logger.debug "initing pipeline"
     {:ok, {0, 0}}
   end
 
   def handle_cast({:work_once}, {flush_skipped, append_skipped}) do
-    {latest_tweet_id, latest_tweets} = poll
+    latest_tweets = poll
     sieved_tweets = latest_tweets |> sieve
 
-    unless Enum.empty?(latest_tweets), do: update_id latest_tweet_id
-    unless Enum.empty?(sieved_tweets) do
-      backup_tweets sieved_tweets
+    case latest_tweets do
+      [latest_tweet | _] ->
+        update_id latest_tweet.id
 
-      sieved_urls = for tweet <- sieved_tweets,
-	url_struct <- tweet.entities.urls,
-	url <- url_struct.expanded_url |> DuplicatesFilter.valuable_part,
-	into: MapSet.new,
-        do: url
-  # TODO: ^ duplicates_filter sieve_urls logic duplication
-      append_urls sieved_urls
+        urls = for tweet <- latest_tweets,
+                   url_struct <- tweet.entities.urls,
+                   do: url_struct.expanded_url |> Filter.valuable_part
+
+        append_urls urls
+      _ -> nil
     end
-    {:noreply, {}}
-  end
-  
-  def poll, do: TwitterPoller.latest_tweets
+    unless Enum.empty?(sieved_tweets), do: backup_tweets sieved_tweets
 
-  def sieve(tweets), do: TwitterPoller.sieve_urls(tweets)
+    {:noreply, {flush_skipped, append_skipped}}
+  end
+
+  def poll, do: Poller.latest_tweets
+
+  def sieve(tweets), do: Filter.sieve_urls(tweets)
 
   def update_id(id), do: Persister.update_id(id)
 
-  def backup_tweets(tweets), do: nil
+  def backup_tweets(tweets), do: Persister.store_tweets(tweets)
 
   def append_urls(urls), do: Persister.append_urls(urls)
 

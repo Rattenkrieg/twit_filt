@@ -2,7 +2,10 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
-config :twit_filt, storage_urls_file: "twit_urls.txt", storage_id_file: "twit_last_id.txt"
+config :twit_filt,
+  storage_urls_file: "twit_urls.txt",
+  storage_id_file: "twit_last_id.txt",
+  data_dir: "./twit_filt"
 
 config :extwitter, :oauth, [
    consumer_key: System.get_env("TWIT_FILT_CONS_KEY"),

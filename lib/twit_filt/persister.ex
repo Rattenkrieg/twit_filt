@@ -1,77 +1,66 @@
 defmodule TwitFilt.Persister do
-  use GenServer
   require Logger
 
+  @data_dir Application.get_env(:twit_filt, :data_dir)
   @urls_file Application.get_env(:twit_filt, :storage_urls_file)
   @id_file Application.get_env(:twit_filt, :storage_id_file)
-  
-  def start_link(data_dir) do
-    Logger.debug "linking persister"
-    GenServer.start_link(__MODULE__, data_dir, name: __MODULE__)
+
+  @on_load :init
+  def init do
+    unless File.exists?(@data_dir), do: File.mkdir_p! @data_dir
+    :ok
   end
 
   def append_urls(urls) do
-    GenServer.cast(__MODULE__, {:append, urls})
+    spawn fn ->
+      File.write!("#{@data_dir}/#{@urls_file}", urls
+      |> Enum.map(&(~s(#{&1}\r\n))), [:append])
+    end
   end
 
   def update_id(id) do
-    GenServer.cast(__MODULE__, {:update, id})
+    spawn fn ->
+      File.write!("#{@data_dir}/#{@id_file}", ~s(#{id}\r\n))
+    end
   end
 
   def flush_urls do
-    GenServer.cast(__MODULE__, {:flush})
+    "#{@data_dir}/#{@urls_file}" |> File.rm!
   end
 
   def get_stored_urls do
-    GenServer.call(__MODULE__, {:contents_urls})
+    "#{@data_dir}/#{@urls_file}"
+    |> read_strings
+    |> extract_contents
+    |> Enum.reduce(%{},
+      fn url, acc -> Map.update(acc, url, 1, &(&1 + 1))
+    end)
   end
 
   def get_last_id do
-    GenServer.call(__MODULE__, {:contents_id})
-  end
-
-  def init(data_dir) do
-    Logger.debug "initing persister"
-    unless File.exists?(data_dir), do: File.mkdir_p! data_dir
-    {:ok, {data_dir}}
-  end
-
-  def handle_cast({:append, urls}, {data_dir}) do
-    File.write!("#{data_dir}/#{@urls_file}", urls |>
-      Enum.map(fn {url, cnt} -> ~s(#{url} #{cnt}\r\n) end), [:append])
-    {:noreply, {data_dir}}
-  end
-
-  def handle_cast({:update, id}, {data_dir}) do
-    File.write!("#{data_dir}/#{@id_file}", ~s(#{id}\r\n))
-    {:noreply, {data_dir}}
-  end
-
-  def handle_cast({:flush}, {data_dir}) do
-    "#{data_dir}/#{@urls_file}" |> File.rm!
-    {:noreply, {data_dir}}
-  end
-
-  def handle_call({:contents_urls}, _, {data_dir}) do
-    urls = "#{data_dir}/#{@urls_file}"
-    |> read_file
-    |> extract_contents
-    |> Enum.into(%{}, fn s ->
-      [url, cnt] = String.split(s, " ")
-      {url, String.to_integer(cnt)}
-    end)
-    {:reply, urls, {data_dir}}
-  end
-
-  def handle_call({:contents_id}, _, {data_dir}) do
-    id = "#{data_dir}/#{@id_file}" |> read_file |> extract_contents
+    id = "#{@data_dir}/#{@id_file}" |> read_strings |> extract_contents
     [id | _] = id ++ [nil]
-    {:reply, id, {data_dir}}
+    id
   end
 
-  def read_file(file) do
+  def store_tweets(tweets) do
+    spawn fn ->
+      tweets
+      |> Enum.each(&File.write!("#{@data_dir}/#{&1.id}.dat", :erlang.term_to_binary(&1)))
+    end
+  end
+
+  def read_tweets(cnt) do
+    "#{@data_dir}/*.dat"
+    |> Path.wildcard
+    |> Enum.sort(&(&1 > &2))
+    |> Enum.take(cnt)
+    |> Enum.map(&(File.read!(&1) |> :erlang.binary_to_term))
+  end
+
+  def read_strings(file) do
     with {:ok, file} <- File.open(file, [:read]),
-         contents <- file
+         contents = file
 	   |> IO.stream(:line)
 	   |> Stream.map(&String.rstrip/1)
 	   |> Enum.to_list,

@@ -3,13 +3,16 @@ defmodule TwitFilt.DuplicatesFilterTest do
   alias TwitFilt.DuplicatesFilter, as: Deduper
   alias TwitFilt.TwitterPoller, as: Poller
 
-  setup_all do
+  setup do
+    :ok = Application.stop :twit_filt
+    :ok = Application.start :twit_filt
+    :timer.sleep 2_000
     :ok
   end
 
   test "fresh sieve should not miss no url" do
     new_tweets = Poller.latest_tweets
-    sieved = Deduper.sieve_urls new_tweets
+    _ = Deduper.sieve_urls new_tweets
     seen_urls = Deduper.seen_urls
 
     assert new_tweets |> Enum.all?(fn tweet ->
@@ -19,11 +22,34 @@ defmodule TwitFilt.DuplicatesFilterTest do
   end
 
   test "all sieved tweets must have urls" do
+    new_tweets = Poller.latest_tweets
+    sieved = Deduper.sieve_urls new_tweets
 
     sieved |> Enum.all?(&(&1.entities.urls |> Enum.count > 0))
   end
 
   test "tweets count should not increase after sieving" do
-    sieved |> Enum.count <= new_tweets |> Enum.count
+    new_tweets = Poller.latest_tweets
+    sieved = Deduper.sieve_urls new_tweets
+
+    assert sieved |> Enum.count <= new_tweets |> Enum.count
+  end
+
+  test "sieving same tweets should not decrease urls count" do
+    new_tweets = Poller.latest_tweets
+    _ = Deduper.sieve_urls new_tweets
+    seen_urls_1 = Deduper.seen_urls
+    _ = Deduper.sieve_urls new_tweets
+    seen_urls_2 = Deduper.seen_urls
+
+    assert seen_urls_1 |> Enum.all?(fn {k, v} -> seen_urls_2[k] >= v end)
+  end
+
+  test "sieving same tweets should return []" do
+    new_tweets = Poller.latest_tweets
+    _ = Deduper.sieve_urls new_tweets
+    sieved_2 = Deduper.sieve_urls new_tweets
+
+    assert sieved_2 == []
   end
 end
