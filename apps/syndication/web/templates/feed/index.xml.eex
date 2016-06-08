@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Filtered Tweets</title>
+    <description>cuz me only interested in links to articles with code</description>
+    <%= for tweet <- @items do %>
+      <item>
+        <title>
+          <%= tweet.user.name %>
+        </title>
+        <link><%= ~s(https://twitter.com/statuses/#{tweet.id_str}) %></link>
+        <description>
+          <%= tweet.text %>
+        </description>
+        <pubDate><%= tweet.created_at  %></pubDate>
+        <guid isPermaLink="true"><%= ~s(https://twitter.com/statuses/#{tweet.id_str}) %></guid>
+      </item>
+    <% end %>
+  </channel>
+</rss>
