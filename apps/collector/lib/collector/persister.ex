@@ -50,6 +50,7 @@ defmodule Collector.Persister do
     end
   end
 
+  def read_tweets(n) when n <= 0, do: []
   def read_tweets(cnt) do
     "#{@data_dir}/*.dat"
     |> Path.wildcard

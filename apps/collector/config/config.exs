@@ -5,7 +5,8 @@ use Mix.Config
 config :collector,
   storage_urls_file: "twit_urls.txt",
   storage_id_file: "twit_last_id.txt",
-  data_dir: "./././twit_filt"
+  data_dir: "./././twit_filt",
+  served_tweets_cnt: 200
 
 config :extwitter, :oauth, [
    consumer_key: System.get_env("TWIT_FILT_CONS_KEY"),
@@ -14,6 +15,15 @@ config :extwitter, :oauth, [
    access_token_secret: System.get_env("TWIT_FILT_ACCS_SEC"),
 ]
 
+config :quantum, cron: [
+  fetch_tweets: [
+    schedule: "*/5 * * * *",
+    task: {Collector.Pipeline, :fetch_tweets},
+    args: [],
+    overlap: false,
+    timezone: :local,
+  ]
+]
 
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this

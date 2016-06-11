@@ -5,21 +5,31 @@ defmodule Collector.Pipeline do
   alias Collector.DuplicatesFilter, as: Filter
   alias Collector.Persister
 
+  @served_tweets_cnt Application.get_env(:collector, :served_tweets_cnt)
+
   def start_link do
     Logger.debug "linking pipeline"
-    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
-  def work_once do
-    GenServer.call(__MODULE__, {:work_once})
+  def fetch_tweets do
+    GenServer.cast(__MODULE__, {:fetch_tweets})
   end
 
-  def init(_) do
+  def latest_tweets do
+    GenServer.call(__MODULE__, {:latest_tweets})
+  end
+
+  def init(tweets) do
     Logger.debug "initing pipeline"
-    {:ok, {0, 0}}
+    {:ok, {tweets, 0, 0}}
   end
 
-  def handle_call({:work_once}, _, {flush_skipped, append_skipped}) do
+  def handle_call({:latest_tweets}, _, {tweets, flush_skipped, append_skipped}) do
+    {:reply, tweets, {tweets, flush_skipped, append_skipped}}
+  end
+
+  def handle_cast({:fetch_tweets}, {tweets, flush_skipped, append_skipped}) do
     latest_tweets = poll
     sieved_tweets = latest_tweets |> sieve
 
@@ -36,8 +46,11 @@ defmodule Collector.Pipeline do
     end
     unless Enum.empty?(sieved_tweets), do: backup_tweets sieved_tweets
 
-    resp_tweets = sieved_tweets ++ read_tweets(200 - Enum.count(sieved_tweets))
-    {:reply, resp_tweets, {flush_skipped, append_skipped}}
+    sieved_cnt = sieved_tweets |> Enum.count
+    in_mem_cnt = tweets |> Enum.count
+    tweets = tweets ++ Enum.take(tweets, @served_tweets_cnt - sieved_cnt)
+                    ++ read_tweets(@served_tweets_cnt - sieved_cnt - in_mem_cnt)
+    {:noreply, {tweets, flush_skipped, append_skipped}}
   end
 
   def poll, do: Poller.latest_tweets

@@ -14,7 +14,7 @@ defmodule Collector.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :extwitter],
+    [applications: [:logger, :extwitter, :quantum],
      mod: {Collector, []}]
   end
 
@@ -30,7 +30,8 @@ defmodule Collector.Mixfile do
   defp deps do
     [
       {:oauth, github: "tim/erlang-oauth"},
-      {:extwitter, "~> 0.7"}
+      {:extwitter, "~> 0.7"},
+      {:quantum, "~> 1.7"},
     ]
   end
 end

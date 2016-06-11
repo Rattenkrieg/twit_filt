@@ -4,7 +4,7 @@ defmodule Syndication.FeedController do
   alias Collector.Pipeline
 
   def index(conn, _params) do
-    tweets = Pipeline.work_once
+    tweets = Pipeline.latest_tweets
     conn
      |> put_layout(:none)
      |> put_resp_content_type("application/xml")
