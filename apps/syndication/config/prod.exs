@@ -13,7 +13,7 @@ use Mix.Config
 # which you typically run after static files are built.
 config :syndication, Syndication.Endpoint,
   http: [port: {:system, "PORT"}],
-  url: [host: "example.com", port: 80],
+  url: [host: "example.com", port: 4000],
   cache_static_manifest: "priv/static/manifest.json"
 
 # Do not print debug messages in production
@@ -53,7 +53,7 @@ config :logger, level: :info
 # Alternatively, you can configure exactly which server to
 # start per endpoint:
 #
-#     config :syndication, Syndication.Endpoint, server: true
+     config :syndication, Syndication.Endpoint, server: true
 #
 # You will also need to set the application root to `.` in order
 # for the new static assets to be served after a hot upgrade:

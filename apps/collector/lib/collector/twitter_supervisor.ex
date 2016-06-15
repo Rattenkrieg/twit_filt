@@ -11,7 +11,7 @@ defmodule Collector.TwitterSupervisor do
     Logger.debug "initing application supervisor"
     supervise([worker(Collector.TwitterPoller, [{Collector.Persister, :get_last_id, []}]),
                worker(Collector.DuplicatesFilter, [fn -> Collector.Persister.get_stored_urls end]),
-               worker(Collector.Pipeline, []),
+               worker(Collector.Pipeline, [fn -> Collector.Persister.read_tweets(200) end]),
 	      ],
       strategy: :one_for_one)
   end

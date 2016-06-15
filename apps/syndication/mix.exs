@@ -38,6 +38,7 @@ defmodule Syndication.Mixfile do
      {:gettext, "~> 0.9"},
      {:cowboy, "~> 1.0"},
      {:collector, in_umbrella: true},
+     {:exrm, github: "bitwalker/exrm"},
     ]
   end
 end

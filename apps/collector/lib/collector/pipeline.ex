@@ -7,9 +7,9 @@ defmodule Collector.Pipeline do
 
   @served_tweets_cnt Application.get_env(:collector, :served_tweets_cnt)
 
-  def start_link do
+  def start_link(archive) do
     Logger.debug "linking pipeline"
-    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+    GenServer.start_link(__MODULE__, archive.(), name: __MODULE__)
   end
 
   def fetch_tweets do
@@ -17,7 +17,7 @@ defmodule Collector.Pipeline do
   end
 
   def latest_tweets do
-    GenServer.call(__MODULE__, {:latest_tweets})
+    GenServer.call(__MODULE__, {:latest_tweets })
   end
 
   def init(tweets) do
@@ -48,8 +48,7 @@ defmodule Collector.Pipeline do
 
     sieved_cnt = sieved_tweets |> Enum.count
     in_mem_cnt = tweets |> Enum.count
-    tweets = tweets ++ Enum.take(tweets, @served_tweets_cnt - sieved_cnt)
-                    ++ read_tweets(@served_tweets_cnt - sieved_cnt - in_mem_cnt)
+    tweets = sieved_tweets ++ Enum.take(tweets, @served_tweets_cnt - sieved_cnt)
     {:noreply, {tweets, flush_skipped, append_skipped}}
   end
 

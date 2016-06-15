@@ -4,6 +4,9 @@ defmodule Collector.Mixfile do
   def project do
     [app: :collector,
      version: "0.0.1",
+     build_path: "../../_build",
+     deps_path: "../../deps",
+     lockfile: "../../mix.lock",
      elixir: "~> 1.2",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -14,7 +17,7 @@ defmodule Collector.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :extwitter, :quantum],
+    [applications: [:logger, :quantum, :oauth, :extwitter],
      mod: {Collector, []}]
   end
 
@@ -32,6 +35,7 @@ defmodule Collector.Mixfile do
       {:oauth, github: "tim/erlang-oauth"},
       {:extwitter, "~> 0.7"},
       {:quantum, "~> 1.7"},
+      {:exrm, github: "bitwalker/exrm"},
     ]
   end
 end
