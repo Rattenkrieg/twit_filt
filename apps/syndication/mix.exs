@@ -3,7 +3,7 @@ defmodule Syndication.Mixfile do
 
   def project do
     [app: :syndication,
-     version: "0.0.1",
+     version: "0.0.2",
      build_path: "../../_build",
      config_path: "../../config/config.exs",
      deps_path: "../../deps",
@@ -21,7 +21,7 @@ defmodule Syndication.Mixfile do
   # Type `mix help compile.app` for more information.
   def application do
     [mod: {Syndication, []},
-     applications: [:phoenix, :phoenix_html, :cowboy, :logger, :gettext, :collector]]
+     applications: [:phoenix, :phoenix_html, :cowboy, :logger, :gettext, :collector, :timex]]
   end
 
   # Specifies which paths to compile per environment.
@@ -39,6 +39,7 @@ defmodule Syndication.Mixfile do
      {:cowboy, "~> 1.0"},
      {:collector, in_umbrella: true},
      {:exrm, github: "bitwalker/exrm"},
+     {:timex, "~> 2.1"}
     ]
   end
 end

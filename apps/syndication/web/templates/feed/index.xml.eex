@@ -10,9 +10,9 @@
         </title>
         <link><%= ~s(https://twitter.com/statuses/#{tweet.id_str}) %></link>
         <description>
-          <%= tweet.text %>
+          <![CDATA[<%= htmlize_entities(tweet) %>]]>
         </description>
-        <pubDate><%= tweet.created_at  %></pubDate>
+        <pubDate><%= date_from_twitter_to_rss(tweet.created_at)  %></pubDate>
         <guid isPermaLink="true"><%= ~s(https://twitter.com/statuses/#{tweet.id_str}) %></guid>
       </item>
     <% end %>
